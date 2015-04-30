@@ -62,6 +62,8 @@ ENDING equ 9
 EXITING equ 10
 HELPING equ 11
 CREDITS equ 12
+AUDIO equ 13
+GRAPHICS equ 14
 
 REG1 equ 1
 DARK1 equ 3
@@ -498,6 +500,16 @@ pausing:
 	mov status, eax
 	ret
 
+audio:
+	mov eax, AUDIO
+	mov status, eax
+	ret
+
+graphics:
+	mov eax, GRAPHICS
+	mov status, eax
+	ret
+
 statuskey:
 	cmp status, GAME
 	je gamemovement
@@ -596,7 +608,7 @@ startselecttop:
 	mov Selected, eax
 	ret
 startselectbot:
-	mov eax, 4
+	mov eax, 5
 	mov Selected, eax
 	ret
 
@@ -634,7 +646,6 @@ optionsselecttop:
 optionsselectbot:
 	mov eax, 3
 	mov Selected, eax
-	ret
 	ret
 
 gamemovement:
