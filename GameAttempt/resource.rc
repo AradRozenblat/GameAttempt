@@ -1,0 +1,11 @@
+#include "resource.h"
+IDB_GAME BITMAP "racer.bmp"
+IDB_OPTIONS BITMAP "colorracers.bmp"
+IDB_START BITMAP "colorracers.bmp"
+IDB_COLOR1 BITMAP "fullcolor.bmp"
+IDB_COLOR1CHOSE BITMAP "fullcolor.bmp"
+IDB_COLOR2 BITMAP "fullcolor.bmp"
+IDB_COLOR2CHOSE BITMAP "fullcolor.bmp"
+IDB_PAUSING BITMAP "colorracers.bmp"
+IDB_ENDING BITMAP "racers.bmp"
+ 

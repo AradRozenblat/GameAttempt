@@ -1,0 +1,9 @@
+#define IDB_GAME 1
+#define IDB_OPTIONS 2
+#define IDB_START 3
+#define IDB_COLOR1 4
+#define IDB_COLOR1CHOSE 5
+#define IDB_COLOR2 6
+#define IDB_COLOR2CHOSE 7
+#define IDB_PAUSING 8
+#define IDB_ENDING 9
