@@ -9,8 +9,8 @@ include \masm32\include\gdi32.inc
 include \masm32\include\Advapi32.inc
 include \masm32\include\winmm.inc
 includelib \masm32\lib\winmm.lib
-include \masm32\include\dialogs.inc ; macro file for dialogs
-include \masm32\macros\macros.asm ; masm32 macro file
+include \masm32\include\dialogs.inc ;macro file for dialogs
+include \masm32\macros\macros.asm ;masm32 macro file
 includelib \masm32\lib\gdi32.lib
 includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
@@ -32,7 +32,7 @@ WINDOW_HEIGHT equ 750
 RIGHT equ 1
 DOWN equ 2
 LEFT equ 3
-UP  equ 4
+UP	equ 4
 STOP equ 5
 
 SPEED equ MYD
@@ -45,14 +45,14 @@ HORIZONTAL1 equ 1
 VERTICAL2 equ 0
 HORIZONTAL2 equ 1
 
-STARTX1 equ (WINDOW_WIDTH/MYD*3/4)
-STARTY1 equ (WINDOW_HEIGHT/MYD/2)
-STARTX2 equ (WINDOW_WIDTH/MYD*1/4)
-STARTY2 equ (WINDOW_HEIGHT/MYD/2)
+MAINMENUX1 equ (WINDOW_WIDTH/MYD*3/4)
+MAINMENUY1 equ (WINDOW_HEIGHT/MYD/2)
+MAINMENUX2 equ (WINDOW_WIDTH/MYD*1/4)
+MAINMENUY2 equ (WINDOW_HEIGHT/MYD/2)
 
 GAME equ 1
 SETTINGS equ 2
-START equ 3
+MAINMENU equ 3
 COLOR1 equ 4
 COLOR1CHOSE equ 5
 COLOR2 equ 6
@@ -64,6 +64,17 @@ HELPING equ 11
 CREDITS equ 12
 AUDIO equ 13
 GRAPHICS equ 14
+NEWGAMEBUTTON equ 15
+MAINMENUBUTTON equ 16
+BACKBUTTON equ 17
+SETTINGSBUTTON equ 18
+AUDIOBUTTON equ 19
+GRAPHICSBUTTON equ 20
+RESUMEBUTTON equ 21
+HELPBUTTON equ 22
+CREDITSBUTTON equ 23
+EXITBUTTON equ 24
+HIGHLIGHT equ 25
 
 REG1 equ 1
 DARK1 equ 3
@@ -93,18 +104,50 @@ Color1 DWORD 000000ff0000h
 Color2 DWORD 0000000000ffh
 Darker1 DWORD ?
 Darker2 DWORD ?
-P1 Player <1, Color1, STARTX1, STARTY1, SPEED, LEFT, 0, 1, BOOSTS1>
-P2 Player <2, Color2, STARTX2, STARTY2, SPEED, RIGHT, 0, 1, BOOSTS2>
-ClassName DB "TheClass",0
-windowTitle DB "TRON: REASSEMBLED",0
+P1 Player <1, Color1, MAINMENUX1, MAINMENUY1, SPEED, LEFT, 0, 1, BOOSTS1>
+P2 Player <2, Color2, MAINMENUX2, MAINMENUY2, SPEED, RIGHT, 0, 1, BOOSTS2>
+ClassName DB "TheClass", 0
+windowTitle DB "TRON: REASSEMBLED", 0
 backupecx	DWORD	?
 grid DB WINDOW_WIDTH/MYD*WINDOW_HEIGHT/MYD dup(0)
 GameBMH HBITMAP ?
-OptionsBMH HBITMAP ?
-StartBMH HBITMAP ?
+SettingsBMH HBITMAP ?
+MainMenuBMH HBITMAP ?
 PausingBMH HBITMAP ?
 EndingBMH HBITMAP ?
-status DWORD START
+Color1BMH HBITMAP ?
+Color1ChoseBMH HBITMAP ?
+Color2BMH HBITMAP ?
+Color2ChoseBMH HBITMAP ?
+ExitingBMH HBITMAP ?
+HelpingBMH HBITMAP ?
+CreditsBMH HBITMAP ?
+AudioBMH HBITMAP ?
+GraphicsBMH HBITMAP ?
+NewGameButtonBMH HBITMAP ?
+NewGameButtonMaskBMH HBITMAP ?
+MainMenuButtonBMH HBITMAP ?
+MainMenuButtonMaskBMH HBITMAP ?
+BackButtonBMH HBITMAP ?
+BackButtonMaskBMH HBITMAP ?
+SettingsButtonBMH HBITMAP ?
+SettingsButtonMaskBMH HBITMAP ?
+AudioButtonBMH HBITMAP ?
+AudioButtonMaskBMH HBITMAP ?
+GraphicsButtonBMH HBITMAP ?
+GraphicsButtonMaskBMH HBITMAP ?
+ResumeButtonBMH HBITMAP ?
+ResumeButtonMaskBMH HBITMAP ?
+HelpButtonBMH HBITMAP ?
+HelpButtonMaskBMH HBITMAP ?
+CreditsButtonBMH HBITMAP ?
+CreditsButtonMaskBMH HBITMAP ?
+ExitButtonBMH HBITMAP ?
+ExitButtonMaskBMH HBITMAP ?
+HighlightBMH HBITMAP ?
+HighlightMaskBMH HBITMAP ?
+status DWORD MAINMENU
+laststatus DWORD ?
 LastKey1 DWORD ?
 LastKey2 DWORD ?
 NowKey1 DWORD ?
@@ -115,9 +158,71 @@ NowTime1 DWORD ?
 NowTime2 DWORD ?
 BoostTime1 DWORD ?
 BoostTime2 DWORD ?
+
 Selected DWORD 1
- 
+
 .code
+
+DrawImage_WithMask PROC, hdc:HDC, img:HBITMAP, maskedimg:HBITMAP, 	destx:DWORD, desty:DWORD, srcx:DWORD, srcy:DWORD, destw:DWORD, desth:DWORD, srcw:DWORD, srch:DWORD
+;--------------------------------------------------------------------------------
+local hdcMem:HDC
+local HOld:HDC
+	invoke CreateCompatibleDC, hdc
+	mov hdcMem, eax
+	invoke SelectObject, hdcMem, maskedimg
+	invoke SetStretchBltMode, hdc, COLORONCOLOR
+	invoke StretchBlt , hdc, destx, desty, destw, desth, hdcMem, srcx, srcy, srcw, srch, SRCAND
+	
+	invoke SelectObject, hdcMem, img
+	invoke StretchBlt , hdc, destx, desty, destw, desth, hdcMem, srcx, srcy, srcw, srch, SRCPAINT
+	invoke DeleteDC, hdcMem
+	ret
+;================================================================================
+DrawImage_WithMask ENDP
+
+DrawImage PROC, hdc:HDC, img:HBITMAP, destx:DWORD, desty:DWORD, srcx:DWORD, srcy:DWORD, destw:DWORD, desth:DWORD, srcw:DWORD, srch:DWORD
+;--------------------------------------------------------------------------------
+local hdcMem:HDC
+local HOld:HBITMAP
+	invoke CreateCompatibleDC, hdc
+	mov hdcMem, eax
+	invoke SelectObject, hdcMem, img
+	mov HOld, eax
+	invoke SetStretchBltMode, hdc, COLORONCOLOR
+	invoke StretchBlt , hdc, destx, desty, destw, desth, hdcMem, srcx, srcy, srcw, srch, SRCCOPY
+	invoke SelectObject, hdcMem, HOld
+	invoke DeleteDC, hdcMem 
+	invoke DeleteObject, HOld
+	ret
+;================================================================================
+DrawImage ENDP
+
+Get_Handle_To_Mask_Bitmap PROC, hbmColour:HBITMAP, crTransparent:COLORREF
+;--------------------------------------------------------------------------------
+local hdcMem:HDC
+local hdcMem2:HDC
+local hbmMask:HBITMAP
+local bm:BITMAP
+local hold:HBITMAP
+local hold2:HBITMAP
+	invoke GetObject, hbmColour, SIZEOF(BITMAP), addr bm
+	invoke CreateBitmap, bm.bmWidth, bm.bmHeight, 1, 1, NULL
+	mov hbmMask, eax
+	invoke CreateCompatibleDC, NULL
+	mov hdcMem, eax
+	invoke CreateCompatibleDC, NULL
+	mov hdcMem2, eax
+	invoke SelectObject, hdcMem, hbmColour
+	invoke SelectObject, hdcMem2, hbmMask
+	invoke SetBkColor, hdcMem, crTransparent
+	invoke BitBlt, hdcMem2, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY
+	invoke BitBlt, hdcMem, 0, 0, bm.bmWidth, bm.bmHeight, hdcMem2, 0, 0, SRCINVERT
+	invoke DeleteDC, hdcMem
+	invoke DeleteDC, hdcMem2
+	mov eax, hbmMask
+	ret
+;================================================================================
+Get_Handle_To_Mask_Bitmap ENDP
 
 DrawBG PROC, mystatus:DWORD, myrect:RECT, myhdc:HDC, hWnd:HWND
 ;----------------------------------------------------------------------------
@@ -129,14 +234,32 @@ DrawBG PROC, mystatus:DWORD, myrect:RECT, myhdc:HDC, hWnd:HWND
 
 	cmp mystatus, GAME
 	je gamedraw
-	cmp mystatus, START
-	je startdraw
+	cmp mystatus, MAINMENU
+	je mainmenudraw
 	cmp mystatus, SETTINGS
-	je optionsdraw
+	je settingsdraw
 	cmp mystatus, PAUSING
 	je pausingdraw
 	cmp mystatus, ENDING
 	je endingdraw
+	cmp mystatus, COLOR1
+	je color1draw
+	cmp mystatus, COLOR1CHOSE
+	je color1chosedraw
+	cmp mystatus, COLOR2
+	je color2draw
+	cmp mystatus, COLOR2CHOSE
+	je color2chosedraw
+	cmp mystatus, EXITING
+	je exitingdraw
+	cmp mystatus, HELPING
+	je helpingdraw
+	cmp mystatus, CREDITS
+	je creditsdraw
+	cmp mystatus, AUDIO
+	je audiodraw
+	cmp mystatus, GRAPHICS
+	je graphicsdraw
 	invoke ExitProcess, 0
 
 gamedraw:
@@ -144,49 +267,244 @@ gamedraw:
 	mov OldHandle, eax
 	invoke GetClientRect, hWnd, addr myrect
 	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY			   ;first zeroes are dest and second zeroes are src
+	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
 	invoke SelectObject, mem_hdc, OldHandle
 	invoke DeleteDC, mem_hdc
 	ret
 
-startdraw:
-	invoke SelectObject, mem_hdc, StartBMH
+mainmenudraw:	;new game, settings, help, credits, exit
+	;invoke SelectObject, mem_hdc, MainMenuBMH
+	;mov OldHandle, eax
+	invoke GetClientRect, hWnd, addr myrect
+	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
+	invoke SelectObject, mem_hdc, OldHandle
+	invoke DeleteDC, mem_hdc
+
+	cmp Selected, 1
+	je mainmenunewgameselect
+	cmp Selected, 2
+	je mainmenusettingsselect
+	cmp Selected, 3
+	je mainmenuhelpselect
+	cmp Selected, 4
+	je mainmenucreditsselect
+	cmp Selected, 5
+	je mainmenuexitselect
+	ret
+	
+mainmenunewgameselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+mainmenusettingsselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+mainmenuhelpselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+mainmenucreditsselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+mainmenuexitselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+settingsdraw:		;audio, graphics, back
+	invoke SelectObject, mem_hdc, SettingsBMH
 	mov OldHandle, eax
 	invoke GetClientRect, hWnd, addr myrect
 	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY			   ;first zeroes are dest and second zeroes are src
+	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
 	invoke SelectObject, mem_hdc, OldHandle
 	invoke DeleteDC, mem_hdc
+
+	cmp Selected, 1
+	je settingsaudioselect
+	cmp Selected, 2
+	je settingsgraphicsselect
+	cmp Selected, 3
+	je settingsbackselect
 	ret
 
-optionsdraw:
-	invoke SelectObject, mem_hdc, OptionsBMH
-	mov OldHandle, eax
-	invoke GetClientRect, hWnd, addr myrect
-	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY			   ;first zeroes are dest and second zeroes are src
-	invoke SelectObject, mem_hdc, OldHandle
-	invoke DeleteDC, mem_hdc
+settingsaudioselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
 	ret
 
-pausingdraw:
+settingsgraphicsselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+settingsbackselect:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+pausingdraw:		;resume, new game, settings, help, mainmenu
 	invoke SelectObject, mem_hdc, PausingBMH
 	mov OldHandle, eax
 	invoke GetClientRect, hWnd, addr myrect
 	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY			   ;first zeroes are dest and second zeroes are src
+	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
 	invoke SelectObject, mem_hdc, OldHandle
 	invoke DeleteDC, mem_hdc
+
+	cmp Selected, 1
+	je pausingresumeselected
+	cmp Selected, 2
+	je pausingnewgameselected
+	cmp Selected, 3
+	je pausingsettingsselected
+	cmp Selected, 4
+	je pausinghelpselected
+	cmp Selected, 5
+	je pausingmainmenuselected
 	ret
 
-endingdraw:
+pausingresumeselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+pausingnewgameselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+pausingsettingsselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+pausinghelpselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+pausingmainmenuselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+endingdraw:			;new game, credits, mainmenu, exit
 	invoke SelectObject, mem_hdc, EndingBMH
 	mov OldHandle, eax
 	invoke GetClientRect, hWnd, addr myrect
 	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY			   ;first zeroes are dest and second zeroes are src
+	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
 	invoke SelectObject, mem_hdc, OldHandle
 	invoke DeleteDC, mem_hdc
+	
+	cmp Selected, 1
+	je endingnewgameselected
+	cmp Selected, 2
+	je endingcreditsselected
+	cmp Selected, 3
+	je endingmainmenuselected
+	cmp Selected, 4
+	je endingexitselected
+	ret
+
+endingnewgameselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+endingcreditsselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+endingmainmenuselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+endingexitselected:
+	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	ret
+
+color1draw:
+	ret
+color1chosedraw:
+	ret
+color2draw:
+	ret
+color2chosedraw:
+	ret
+exitingdraw:
+	ret
+helpingdraw:
+	ret
+creditsdraw:
+	ret
+audiodraw:
+	ret
+graphicsdraw:
 	ret
 ;============================================================================
 DrawBG ENDP
@@ -278,13 +596,13 @@ clear:
 	mov BYTE ptr [ebx], 0
 	inc ebx
 	loop clear
-	mov eax, STARTX1
+	mov eax, MAINMENUX1
 	mov P1.x, eax
-	mov eax, STARTY1
+	mov eax, MAINMENUY1
 	mov P1.y, eax
-	mov eax, STARTX2
+	mov eax, MAINMENUX2
 	mov P2.x, eax
-	mov eax, STARTY2
+	mov eax, MAINMENUY2
 	mov P2.y, eax
 	mov eax, FACING1
 	mov P1.facing, eax
@@ -465,62 +783,121 @@ closing:
 	invoke ExitProcess, 0
 
 newgame:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, GAME
 	mov status, eax
 	invoke Restart
 	ret
 
 settings:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, SETTINGS
 	mov status, eax
 	ret
 
 help:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, HELPING
 	mov status, eax
 	ret
 
 exiting:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, EXITING
 	mov status, eax
 	ret
 
 resume:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, GAME
 	mov status, eax
 	ret
 
 credits:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, CREDITS
 	mov status, eax
 	ret
 	
 pausing:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, PAUSING
 	mov status, eax
 	ret
 
+backing:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, laststatus
+	cmp laststatus, PAUSING
+	je pausing
+	cmp laststatus, MAINMENU
+	je mainmenu
+	ret
+
 audio:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, AUDIO
 	mov status, eax
 	ret
 
 graphics:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
 	mov eax, GRAPHICS
+	mov status, eax
+	ret
+
+mainmenu:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, status
+	mov laststatus, eax
+	mov eax, MAINMENU
 	mov status, eax
 	ret
 
 statuskey:
 	cmp status, GAME
 	je gamemovement
-	cmp status, START
-	je startmovement
+	cmp status, MAINMENU
+	je mainmenumovement
 	cmp status, SETTINGS
-	je optionsmovement
+	je settingsmovement
 	cmp status, PAUSING
 	je pausingmovement
 	cmp status, ENDING
 	je endingmovement
+	cmp status, AUDIO
+	je audiomovement
+	cmp status, GRAPHICS
+	je graphicsmovement
 	ret
 
 pausingmovement:
@@ -534,15 +911,16 @@ pausingmovement:
 	je pausingselect
 	cmp wParam, VK_ESCAPE
 	je closing
+	ret
 pausingupselect:
+	dec Selected
 	cmp Selected, 1
 	jl pausingselectbot
-	dec Selected
 	ret
 pausingdownselect:
-	cmp Selected, 5			;number of buttons: resume, new game, options, help, exit
-	jg pausingselecttop
 	inc Selected
+	cmp Selected, 5	;number of buttons: resume, new game, settings, help, mainmenu
+	jg pausingselecttop
 	ret
 pausingselect:
 	cmp Selected, 1
@@ -554,44 +932,77 @@ pausingselect:
 	cmp Selected, 4
 	je help
 	cmp Selected, 5
-	je exiting
+	je mainmenu
 	ret
 pausingselecttop:
 	mov eax, 1
 	mov Selected, eax
 	ret
 pausingselectbot:
-	mov eax, 4
+	mov eax, 5
 	mov Selected, eax
 	ret
 	
 endingmovement:
-	cmp wParam, VK_ESCAPE
-	je closing
-	cmp wParam, VK_RETURN
-	je newgame
-	ret
-
-startmovement:
 	cmp wParam, VK_UP
-	je startupselect
+	je endingupselect
 	cmp wParam, VK_DOWN
-	je startdownselect
+	je endingdownselect
 	cmp wParam, VK_RETURN
-	je startselect
+	je endingselect
 	cmp wParam, VK_ESCAPE
 	je closing
-startupselect:
+	ret
+endingupselect:
 	dec Selected
 	cmp Selected, 1
-	jl startselectbot
+	jl endingselectbot
 	ret
-startdownselect:
+endingdownselect:
 	inc Selected
-	cmp Selected, 5			;number of buttons: new game, options, help, credits, exit
-	jg startselecttop
+	cmp Selected, 4	;number of buttons: new game, credits, mainmenu, exit
+	jg endingselecttop
 	ret
-startselect:
+endingselect:
+	cmp Selected, 1
+	je newgame
+	cmp Selected, 2
+	je credits
+	cmp Selected, 3
+	je mainmenu
+	cmp Selected, 4
+	je exiting
+	ret
+endingselecttop:
+	mov eax, 1
+	mov Selected, eax
+	ret
+endingselectbot:
+	mov eax, 4
+	mov Selected, eax
+	ret
+
+mainmenumovement:
+	cmp wParam, VK_UP
+	je mainmenuupselect
+	cmp wParam, VK_DOWN
+	je mainmenudownselect
+	cmp wParam, VK_RETURN
+	je mainmenuselect
+	cmp wParam, VK_ESCAPE
+	je closing
+	ret
+mainmenuupselect:
+	dec Selected
+	cmp Selected, 1
+	jl mainmenuselectbot
+	ret
+mainmenudownselect:
+	inc Selected
+	cmp Selected, 5	;number of buttons: new game, settings, help, credits, exit
+	jg mainmenuselecttop
+	ret
+mainmenuselect:
 	cmp Selected, 1
 	je newgame
 	cmp Selected, 2
@@ -603,47 +1014,54 @@ startselect:
 	cmp Selected, 5
 	je exiting
 	ret
-startselecttop:
+mainmenuselecttop:
 	mov eax, 1
 	mov Selected, eax
 	ret
-startselectbot:
+mainmenuselectbot:
 	mov eax, 5
 	mov Selected, eax
 	ret
 
-optionsmovement:
+audiomovement:
+	ret
+
+graphicsmovement:
+	ret
+
+settingsmovement:
 	cmp wParam, VK_UP
-	je optionsupselect
+	je settingsupselect
 	cmp wParam, VK_DOWN
-	je optionsdownselect
+	je settingsdownselect
 	cmp wParam, VK_RETURN
-	je optionsselect
+	je settingsselect
 	cmp wParam, VK_ESCAPE
 	je closing
-optionsupselect:
+	ret
+settingsupselect:
 	dec Selected
 	cmp Selected, 1
-	jl optionsselectbot
+	jl settingsselectbot
 	ret
-optionsdownselect:
+settingsdownselect:
 	inc Selected
-	cmp Selected, 3			;number of buttons: audio, graphics, back
-	jg optionsselecttop
+	cmp Selected, 3	;number of buttons: audio, graphics, back
+	jg settingsselecttop
 	ret
-optionsselect:
+settingsselect:
 	cmp Selected, 1
 	je audio
 	cmp Selected, 2
 	je graphics
 	cmp Selected, 3
-	je pausing
+	je backing
 	ret
-optionsselecttop:
+settingsselecttop:
 	mov eax, 1
 	mov Selected, eax
 	ret
-optionsselectbot:
+settingsselectbot:
 	mov eax, 3
 	mov Selected, eax
 	ret
@@ -656,9 +1074,9 @@ gamemovement:
 	cmp wParam, VK_R
 	je newgame
 	cmp wParam, VK_RSHIFT
-	je startboost1
+	je mainmenuboost1
 	cmp wParam, VK_LSHIFT
-	je startboost2
+	je mainmenuboost2
 	invoke WhichPlayer, wParam
 	cmp eax, 1
 	je gamemovement1
@@ -667,7 +1085,8 @@ gamemovement:
 	cmp eax, -1
 	je theend
 
-startboost1:
+
+mainmenuboost1:
 	cmp P1.speed, SPEED
 	jne boostret1
 	cmp P1.boosts, 0
@@ -685,7 +1104,7 @@ endboost1:
 	mov P1.speed, eax
 	ret
 
-startboost2:
+mainmenuboost2:
 	cmp P2.speed, SPEED
 	jne boostret2
 	cmp P2.boosts, 0
@@ -718,7 +1137,7 @@ gamemovement1:
 	mov eax, NowTime1
 	sub eax, LastTime1
 	cmp eax, 500
-	jle startboost1
+	jle mainmenuboost1
 	jmp notboost1
 
 notboost1:
@@ -784,7 +1203,7 @@ gamemovement2:
 	mov eax, NowTime2
 	sub eax, LastTime2
 	cmp eax, 500
-	jle startboost2
+	jle mainmenuboost2
 	jmp notboost2
 
 notboost2:
@@ -836,15 +1255,15 @@ up2:
 	ret
  
 theend:
-   ret
+	 ret
  
 statuspainting:
 	cmp status, GAME
 	je gamepaint
-	cmp status, START
-	je startpaint
+	cmp status, MAINMENU
+	je mainmenupaint
 	cmp status, SETTINGS
-	je optionspaint
+	je settingspaint
 	cmp status, PAUSING
 	je pausingpaint
 	cmp status, ENDING
@@ -865,15 +1284,19 @@ endingpaint:
 	invoke EndPaint, hWnd, addr paint
 	ret
 
-startpaint:
+mainmenupaint:
 	invoke BeginPaint, hWnd, addr paint
 	mov hdc, eax
 	invoke DrawBG, status, rect, hdc, hWnd
 	invoke EndPaint, hWnd, addr paint
 	ret
 
-optionspaint:
-	jmp OtherInstances
+settingspaint:
+	invoke BeginPaint, hWnd, addr paint
+	mov hdc, eax
+	invoke DrawBG, status, rect, hdc, hWnd
+	invoke EndPaint, hWnd, addr paint
+	ret
 
 gamepaint:
 	mov eax, SPEED
@@ -956,6 +1379,8 @@ nottied1:
 
 dead1:
 	popa
+	mov eax, status
+	mov laststatus, eax
 	mov eax, ENDING
 	mov status, eax
 	ret
@@ -1049,6 +1474,8 @@ nottied2:
 
 dead2:
 	popa
+	mov eax, status
+	mov laststatus, eax
 	mov eax, ENDING
 	mov status, eax
 	ret
@@ -1080,6 +1507,8 @@ notdead2:
 
 tied:
 	popa
+	mov eax, status
+	mov laststatus, eax
 	mov eax, ENDING
 	mov status, eax
 	ret
@@ -1114,12 +1543,12 @@ invoke LoadBitmap, eax, GAME
 mov GameBMH, eax
 
 invoke GetModuleHandle, NULL
-invoke LoadBitmap, eax, START
-mov StartBMH, eax
+invoke LoadBitmap, eax, MAINMENU
+mov MainMenuBMH, eax
 
 invoke GetModuleHandle, NULL
 invoke LoadBitmap, eax, SETTINGS
-mov OptionsBMH, eax
+mov SettingsBMH, eax
 
 invoke GetModuleHandle, NULL
 invoke LoadBitmap, eax, ENDING
@@ -1128,6 +1557,104 @@ mov EndingBMH, eax
 invoke GetModuleHandle, NULL
 invoke LoadBitmap, eax, PAUSING
 mov PausingBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, COLOR1
+mov Color1BMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, COLOR1CHOSE
+mov Color1ChoseBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, COLOR2
+mov Color2BMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, EXITING
+mov ExitingBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, HELPING
+mov HelpingBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, CREDITS
+mov CreditsBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, AUDIO
+mov AudioBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, GRAPHICS
+mov GraphicsBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, NEWGAMEBUTTON
+mov NewGameButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, NewGameButtonBMH, 0ffffffh		;white
+mov NewGameButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, MAINMENUBUTTON
+mov MainMenuButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, MainMenuButtonBMH, 0ffffffh		;white
+mov MainMenuButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, BACKBUTTON
+mov BackButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, BackButtonBMH, 0ffffffh		;white
+mov BackButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, SETTINGSBUTTON
+mov SettingsButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, SettingsButtonBMH, 0ffffffh		;white
+mov SettingsButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, AUDIOBUTTON
+mov AudioButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, AudioButtonBMH, 0ffffffh		;white
+mov AudioButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, GRAPHICSBUTTON
+mov GraphicsButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, GraphicsButtonBMH, 0ffffffh		;white
+mov GraphicsButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, RESUMEBUTTON
+mov ResumeButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, ResumeButtonBMH, 0ffffffh		;white
+mov ResumeButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, HELPBUTTON
+mov HelpButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, HelpButtonBMH, 0ffffffh		;white
+mov HelpButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, CREDITSBUTTON
+mov CreditsButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, CreditsButtonBMH, 0ffffffh		;white
+mov CreditsButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, EXITBUTTON
+mov ExitButtonBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, ExitButtonBMH, 0ffffffh		;white
+mov ExitButtonMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, HIGHLIGHT
+mov HighlightBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, HighlightBMH, 0ffffffh		;white
+mov HighlightMaskBMH, eax
 
 mov eax, Color1
 and eax, 07E7E7Eh
