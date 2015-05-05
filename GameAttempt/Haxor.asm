@@ -224,13 +224,9 @@ local hold2:HBITMAP
 ;================================================================================
 Get_Handle_To_Mask_Bitmap ENDP
 
-DrawBG PROC, mystatus:DWORD, myrect:RECT, myhdc:HDC, hWnd:HWND
+DrawBG PROC, mystatus:DWORD, myrect:RECT, hdc:HDC, hWnd:HWND
 ;----------------------------------------------------------------------------
-	local mem_hdc:HDC
 	local OldHandle:HBITMAP
-
-	invoke CreateCompatibleDC, myhdc
-	mov mem_hdc, eax
 
 	cmp mystatus, GAME
 	je gamedraw
@@ -263,22 +259,11 @@ DrawBG PROC, mystatus:DWORD, myrect:RECT, myhdc:HDC, hWnd:HWND
 	invoke ExitProcess, 0
 
 gamedraw:
-	invoke SelectObject, mem_hdc, GameBMH
-	mov OldHandle, eax
-	invoke GetClientRect, hWnd, addr myrect
-	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
-	invoke SelectObject, mem_hdc, OldHandle
-	invoke DeleteDC, mem_hdc
+	invoke DrawImage, hdc, GameBMH, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 	ret
 
 mainmenudraw:	;new game, settings, help, credits, exit
-	;invoke SelectObject, mem_hdc, MainMenuBMH
-	;mov OldHandle, eax
-	invoke GetClientRect, hWnd, addr myrect
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
-	invoke SelectObject, mem_hdc, OldHandle
-	invoke DeleteDC, mem_hdc
+	invoke DrawImage, hdc, MainMenuBMH, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 
 	cmp Selected, 1
 	je mainmenunewgameselect
@@ -293,54 +278,31 @@ mainmenudraw:	;new game, settings, help, credits, exit
 	ret
 	
 mainmenunewgameselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextmainmenu
 mainmenusettingsselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextmainmenu
 mainmenuhelpselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextmainmenu
 mainmenucreditsselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextmainmenu
 mainmenuexitselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextmainmenu
+
+nextmainmenu:
+	invoke DrawImage_WithMask, hdc, NewGameButtonBMH, NewGameButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, hdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, CreditsButtonBMH, CreditsButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
 	ret
 
 settingsdraw:		;audio, graphics, back
-	invoke SelectObject, mem_hdc, SettingsBMH
-	mov OldHandle, eax
-	invoke GetClientRect, hWnd, addr myrect
-	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
-	invoke SelectObject, mem_hdc, OldHandle
-	invoke DeleteDC, mem_hdc
+	invoke DrawImage, hdc, MainMenuBMH, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 
 	cmp Selected, 1
 	je settingsaudioselect
@@ -351,34 +313,25 @@ settingsdraw:		;audio, graphics, back
 	ret
 
 settingsaudioselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextsettings
 
 settingsgraphicsselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextsettings
 
 settingsbackselect:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextsettings
+
+nextsettings:
+	invoke DrawImage_WithMask, hdc, AudioButtonBMH, AudioButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, hdc, GraphicsButtonBMH, GraphicsButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
 	ret
 
 pausingdraw:		;resume, new game, settings, help, mainmenu
-	invoke SelectObject, mem_hdc, PausingBMH
-	mov OldHandle, eax
-	invoke GetClientRect, hWnd, addr myrect
-	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
-	invoke SelectObject, mem_hdc, OldHandle
-	invoke DeleteDC, mem_hdc
+	invoke DrawImage, hdc, PausingBMH, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 
 	cmp Selected, 1
 	je pausingresumeselected
@@ -393,58 +346,35 @@ pausingdraw:		;resume, new game, settings, help, mainmenu
 	ret
 
 pausingresumeselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextpausing
 
 pausingnewgameselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextpausing
 
 pausingsettingsselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextpausing
 
 pausinghelpselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextpausing
 
 pausingmainmenuselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextpausing
+
+nextpausing:
+	invoke DrawImage_WithMask, hdc, ResumeButtonBMH, ResumeButtonMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, hdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, SettingsButtonBMH, SettingsButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, HelpButtonBMH, HelpButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 5*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
 	ret
 
 endingdraw:			;new game, credits, mainmenu, exit
-	invoke SelectObject, mem_hdc, EndingBMH
-	mov OldHandle, eax
-	invoke GetClientRect, hWnd, addr myrect
-	;invoke StretchBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, 3944, 2245, SRCCOPY
-	invoke BitBlt, myhdc, 0, 0, myrect.right, myrect.bottom, mem_hdc, 0, 0, SRCCOPY	 ;first zeroes are dest and second zeroes are src
-	invoke SelectObject, mem_hdc, OldHandle
-	invoke DeleteDC, mem_hdc
+	invoke DrawImage, hdc, EndingBMH, 0, 0, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
 	
 	cmp Selected, 1
 	je endingnewgameselected
@@ -457,35 +387,26 @@ endingdraw:			;new game, credits, mainmenu, exit
 	ret
 
 endingnewgameselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextending
 
 endingcreditsselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextending
 
 endingmainmenuselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	ret
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextending
 
 endingexitselected:
-	invoke DrawImage_WithMask, myhdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
-	invoke DrawImage_WithMask, myhdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
-	invoke DrawImage_WithMask, myhdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextending
+
+nextending:
+	invoke DrawImage_WithMask, hdc, NewGameButtonBMH, NewGameButtonMaskBMH,  WINDOW_WIDTH/4, 1*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, CreditsButtonBMH, CreditsButtonMaskBMH, WINDOW_WIDTH/4, 2*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346	;magic numbers
+	invoke DrawImage_WithMask, hdc, MainMenuButtonBMH, MainMenuButtonMaskBMH,  WINDOW_WIDTH/4, 3*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, ExitButtonBMH, ExitButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
 	ret
 
 color1draw:
@@ -776,7 +697,7 @@ local rect:RECT
 	jmp OtherInstances
 
 noterasing:
-	mov eax, 1
+	mov eax, 0
 	ret
 
 closing:
@@ -1273,28 +1194,68 @@ statuspainting:
 pausingpaint:
 	invoke BeginPaint, hWnd, addr paint
 	mov hdc, eax
-	invoke DrawBG, status, rect, hdc, hWnd
+	invoke CreateCompatibleDC, hdc
+	mov mem_hdc, eax
+	invoke CreateCompatibleBitmap, hdc, WINDOW_WIDTH, WINDOW_HEIGHT
+	mov mem_hbm, eax
+	invoke SelectObject, mem_hdc, mem_hbm
+	mov OldHandle, eax
+	invoke DrawBG, status, rect, mem_hdc, hWnd
+	invoke BitBlt, hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mem_hdc, 0, 0, SRCCOPY
+	invoke SelectObject, mem_hdc, OldHandle
+	invoke DeleteObject, mem_hbm
+	invoke DeleteDC, mem_hdc
 	invoke EndPaint, hWnd, addr paint
 	ret
 
 endingpaint:
 	invoke BeginPaint, hWnd, addr paint
 	mov hdc, eax
-	invoke DrawBG, status, rect, hdc, hWnd
+	invoke CreateCompatibleDC, hdc
+	mov mem_hdc, eax
+	invoke CreateCompatibleBitmap, hdc, WINDOW_WIDTH, WINDOW_HEIGHT
+	mov mem_hbm, eax
+	invoke SelectObject, mem_hdc, mem_hbm
+	mov OldHandle, eax
+	invoke DrawBG, status, rect, mem_hdc, hWnd
+	invoke BitBlt, hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mem_hdc, 0, 0, SRCCOPY
+	invoke SelectObject, mem_hdc, OldHandle
+	invoke DeleteObject, mem_hbm
+	invoke DeleteDC, mem_hdc
 	invoke EndPaint, hWnd, addr paint
 	ret
 
 mainmenupaint:
 	invoke BeginPaint, hWnd, addr paint
 	mov hdc, eax
-	invoke DrawBG, status, rect, hdc, hWnd
+	invoke CreateCompatibleDC, hdc
+	mov mem_hdc, eax
+	invoke CreateCompatibleBitmap, hdc, WINDOW_WIDTH, WINDOW_HEIGHT
+	mov mem_hbm, eax
+	invoke SelectObject, mem_hdc, mem_hbm
+	mov OldHandle, eax
+	invoke DrawBG, status, rect, mem_hdc, hWnd
+	invoke BitBlt, hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mem_hdc, 0, 0, SRCCOPY
+	invoke SelectObject, mem_hdc, OldHandle
+	invoke DeleteObject, mem_hbm
+	invoke DeleteDC, mem_hdc
 	invoke EndPaint, hWnd, addr paint
 	ret
 
 settingspaint:
 	invoke BeginPaint, hWnd, addr paint
 	mov hdc, eax
-	invoke DrawBG, status, rect, hdc, hWnd
+	invoke CreateCompatibleDC, hdc
+	mov mem_hdc, eax
+	invoke CreateCompatibleBitmap, hdc, WINDOW_WIDTH, WINDOW_HEIGHT
+	mov mem_hbm, eax
+	invoke SelectObject, mem_hdc, mem_hbm
+	mov OldHandle, eax
+	invoke DrawBG, status, rect, mem_hdc, hWnd
+	invoke BitBlt, hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mem_hdc, 0, 0, SRCCOPY
+	invoke SelectObject, mem_hdc, OldHandle
+	invoke DeleteObject, mem_hbm
+	invoke DeleteDC, mem_hdc
 	invoke EndPaint, hWnd, addr paint
 	ret
 
@@ -1514,7 +1475,7 @@ tied:
 	ret
 
 timing:
-	invoke InvalidateRect, hWnd, NULL, TRUE
+	invoke InvalidateRect, hWnd, NULL, TRUE	;TRUE
 	ret
 
 OtherInstances:
