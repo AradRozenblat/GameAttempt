@@ -1,19 +1,6 @@
-﻿Build started 5/5/2015 1:50:37 PM.
+﻿Build started 5/7/2015 10:29:17 PM.
      1>Project "C:\Users\Arad\documents\visual studio 2013\Projects\GameAttempt\GameAttempt\GameAttempt.vcxproj" on node 2 (Build target(s)).
-     1>_MASM:
-         Assembling Haxor.asm...
-         cmd.exe /C "C:\Users\Arad\AppData\Local\Temp\tmpa60a11c2785e4620bcf183196027d276.cmd"
-         ml.exe /c /nologo /Zi /Fo"Release\Haxor.obj" /W3 /errorReport:prompt  /TaHaxor.asm
-     1>Haxor.asm(1644): warning A6001: no return from procedure
-     1>Haxor.asm(181): warning A6004: procedure argument or local not referenced : HOld
-     1>Haxor.asm(225): warning A6004: procedure argument or local not referenced : hold
-     1>Haxor.asm(225): warning A6004: procedure argument or local not referenced : hold2
-     1>Haxor.asm(431): warning A6004: procedure argument or local not referenced : myrect
-     1>Haxor.asm(431): warning A6004: procedure argument or local not referenced : hWnd
-     1>Haxor.asm(431): warning A6004: procedure argument or local not referenced : OldHandle
-     1>Haxor.asm(1485): warning A6004: procedure argument or local not referenced : brushcolouring1
-     1>Haxor.asm(1485): warning A6004: procedure argument or local not referenced : brushcolouring2
-       Link:
+     1>Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Arad\documents\visual studio 2013\Projects\GameAttempt\Release\GameAttempt.exe" /INCREMENTAL:NO /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Arad\documents\visual studio 2013\Projects\GameAttempt\Release\GameAttempt.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Arad\documents\visual studio 2013\Projects\GameAttempt\Release\GameAttempt.lib" /MACHINE:X86 /SAFESEH:NO Release\resource.res
          Release\Haxor.obj
          LINK : /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
@@ -22,4 +9,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:05.68
+Time Elapsed 00:00:01.76

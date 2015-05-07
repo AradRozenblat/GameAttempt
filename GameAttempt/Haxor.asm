@@ -75,6 +75,9 @@ HELPBUTTON equ 22
 CREDITSBUTTON equ 23
 EXITBUTTON equ 24
 HIGHLIGHT equ 25
+VOLUMEBAR equ 26
+SELECTOR equ 27
+MUTE equ 28
 
 REG1 equ 1
 DARK1 equ 3
@@ -110,6 +113,7 @@ ClassName DB "TheClass", 0
 windowTitle DB "TRON: REASSEMBLED", 0
 backupecx	DWORD	?
 grid DB WINDOW_WIDTH/MYD*WINDOW_HEIGHT/MYD dup(0)
+sequence HBITMAP 42 dup (?)
 GameBMH HBITMAP ?
 SettingsBMH HBITMAP ?
 MainMenuBMH HBITMAP ?
@@ -144,21 +148,30 @@ CreditsButtonBMH HBITMAP ?
 CreditsButtonMaskBMH HBITMAP ?
 ExitButtonBMH HBITMAP ?
 ExitButtonMaskBMH HBITMAP ?
+MuteButtonBMH HBITMAP ?
+MuteButtonMaskBMH HBITMAP ?
 HighlightBMH HBITMAP ?
 HighlightMaskBMH HBITMAP ?
+AudioGifBMH HBITMAP ?
+VolumeBarBMH HBITMAP ?
+VolumeBarMaskBMH HBITMAP ?
+SelectorBMH HBITMAP ?
+SelectorMaskBMH HBITMAP ?
 status DWORD MAINMENU
 laststatus DWORD ?
 LastKey1 DWORD ?
 LastKey2 DWORD ?
 NowKey1 DWORD ?
 NowKey2 DWORD ?
-LastTime1 DWORD ?
-LastTime2 DWORD ?
-NowTime1 DWORD ?
-NowTime2 DWORD ?
+LastKeyTime1 DWORD ?
+LastKeyTime2 DWORD ?
+NowKeyTime1 DWORD ?
+NowKeyTime2 DWORD ?
 BoostTime1 DWORD ?
 BoostTime2 DWORD ?
-
+LastFrameTime DWORD ?
+NowFrameTime DWORD ?
+Frame DWORD 1
 Selected DWORD 1
 
 .code
@@ -424,6 +437,39 @@ helpingdraw:
 creditsdraw:
 	ret
 audiodraw:
+	mov eax, Frame
+	dec eax
+	imul eax, 1000
+	invoke DrawImage, hdc, AudioBMH, 0, 0, eax, 0, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT
+	cmp Selected, 4
+	je audiobackselected
+	jmp nextaudio
+
+audiobackselected:
+	invoke DrawImage_WithMask, hdc, HighlightBMH, HighlightMaskBMH, WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	jmp nextaudio
+nextaudio:
+	invoke DrawImage_WithMask, hdc, MuteButtonBMH, MuteButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+	invoke DrawImage_WithMask, hdc, BackButtonBMH, BackButtonMaskBMH,  WINDOW_WIDTH/4, 4*WINDOW_HEIGHT/7, 0, 0, WINDOW_WIDTH/2, WINDOW_HEIGHT/7, 1813, 346
+
+	invoke GetTickCount
+	mov NowFrameTime, eax
+	sub eax, LastFrameTime
+	cmp eax, 60
+	jge audiogifdraw
+	ret
+audiogifdraw:
+	mov eax, NowFrameTime
+	mov LastFrameTime, eax
+	mov eax, Frame
+	inc eax
+	mov Frame, eax
+	cmp Frame, 22
+	jg audiogifloop
+	ret
+audiogifloop:
+	mov eax, 1
+	mov Frame, eax
 	ret
 graphicsdraw:
 	ret
@@ -706,8 +752,8 @@ closing:
 newgame:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, GAME
 	mov status, eax
 	invoke Restart
@@ -721,12 +767,18 @@ settings:
 	mov eax, SETTINGS
 	mov status, eax
 	ret
+audiotosettings:
+	mov eax, 1
+	mov Selected, eax
+	mov eax, SETTINGS
+	mov status, eax
+	ret
 
 help:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, HELPING
 	mov status, eax
 	ret
@@ -734,8 +786,8 @@ help:
 exiting:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, EXITING
 	mov status, eax
 	ret
@@ -743,8 +795,8 @@ exiting:
 resume:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, GAME
 	mov status, eax
 	ret
@@ -752,8 +804,8 @@ resume:
 credits:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, CREDITS
 	mov status, eax
 	ret
@@ -761,8 +813,8 @@ credits:
 pausing:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, PAUSING
 	mov status, eax
 	ret
@@ -770,7 +822,6 @@ pausing:
 backing:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, laststatus
 	cmp laststatus, PAUSING
 	je pausing
 	cmp laststatus, MAINMENU
@@ -780,17 +831,23 @@ backing:
 audio:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, AUDIO
 	mov status, eax
+	ret
+
+mute:
+	ret
+
+changesong:
 	ret
 
 graphics:
 	mov eax, 1
 	mov Selected, eax
-	mov eax, status
-	mov laststatus, eax
+	;mov eax, status
+	;mov laststatus, eax
 	mov eax, GRAPHICS
 	mov status, eax
 	ret
@@ -945,6 +1002,42 @@ mainmenuselectbot:
 	ret
 
 audiomovement:
+	cmp wParam, VK_UP
+	je audioupselect
+	cmp wParam, VK_DOWN
+	je audiodownselect
+	cmp wParam, VK_RETURN
+	je audioselect
+	cmp wParam, VK_ESCAPE
+	je closing
+	ret
+audioupselect:
+	dec Selected
+	cmp Selected, 1
+	jl audioselectbot
+	ret
+audiodownselect:
+	inc Selected
+	cmp Selected, 4	;number of buttons: music, mute, change song, back
+	jg audioselecttop
+	ret
+audioselect:
+	cmp Selected, 1
+	je mute
+	cmp Selected, 2
+	je mute
+	cmp Selected, 3
+	je changesong
+	cmp Selected, 4
+	je audiotosettings
+	ret
+audioselecttop:
+	mov eax, 1
+	mov Selected, eax
+	ret
+audioselectbot:
+	mov eax, 4
+	mov Selected, eax
 	ret
 
 graphicsmovement:
@@ -1048,15 +1141,15 @@ gamemovement1:
 	mov LastKey1, eax
 	mov eax, wParam
 	mov NowKey1, eax
-	mov eax, NowTime1
-	mov LastTime1, eax
+	mov eax, NowKeyTime1
+	mov LastKeyTime1, eax
 	invoke GetTickCount
-	mov NowTime1, eax
+	mov NowKeyTime1, eax
 	mov eax, NowKey1
 	cmp LastKey1, eax
 	jne notboost1
-	mov eax, NowTime1
-	sub eax, LastTime1
+	mov eax, NowKeyTime1
+	sub eax, LastKeyTime1
 	cmp eax, 500
 	jle mainmenuboost1
 	jmp notboost1
@@ -1114,15 +1207,15 @@ gamemovement2:
 	mov LastKey2, eax
 	mov eax, wParam
 	mov NowKey2, eax
-	mov eax, NowTime2
-	mov LastTime2, eax
+	mov eax, NowKeyTime2
+	mov LastKeyTime2, eax
 	invoke GetTickCount
-	mov NowTime2, eax
+	mov NowKeyTime2, eax
 	mov eax, NowKey2
 	cmp LastKey2, eax
 	jne notboost2
-	mov eax, NowTime2
-	sub eax, LastTime2
+	mov eax, NowKeyTime2
+	sub eax, LastKeyTime2
 	cmp eax, 500
 	jle mainmenuboost2
 	jmp notboost2
@@ -1189,6 +1282,8 @@ statuspainting:
 	je pausingpaint
 	cmp status, ENDING
 	je endingpaint
+	cmp status, AUDIO
+	je audiopaint
 	jmp closing
 
 pausingpaint:
@@ -1243,6 +1338,23 @@ mainmenupaint:
 	ret
 
 settingspaint:
+	invoke BeginPaint, hWnd, addr paint
+	mov hdc, eax
+	invoke CreateCompatibleDC, hdc
+	mov mem_hdc, eax
+	invoke CreateCompatibleBitmap, hdc, WINDOW_WIDTH, WINDOW_HEIGHT
+	mov mem_hbm, eax
+	invoke SelectObject, mem_hdc, mem_hbm
+	mov OldHandle, eax
+	invoke DrawBG, status, rect, mem_hdc, hWnd
+	invoke BitBlt, hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mem_hdc, 0, 0, SRCCOPY
+	invoke SelectObject, mem_hdc, OldHandle
+	invoke DeleteObject, mem_hbm
+	invoke DeleteDC, mem_hdc
+	invoke EndPaint, hWnd, addr paint
+	ret
+
+audiopaint:
 	invoke BeginPaint, hWnd, addr paint
 	mov hdc, eax
 	invoke CreateCompatibleDC, hdc
@@ -1616,6 +1728,24 @@ invoke LoadBitmap, eax, HIGHLIGHT
 mov HighlightBMH, eax
 invoke Get_Handle_To_Mask_Bitmap, HighlightBMH, 0ffffffh		;white
 mov HighlightMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, VOLUMEBAR
+mov VolumeBarBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, VolumeBarBMH, 0ffffffh		;white
+mov VolumeBarMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, SELECTOR
+mov SelectorMaskBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, SelectorBMH, 0ffffffh		;white
+mov SelectorMaskBMH, eax
+
+invoke GetModuleHandle, NULL
+invoke LoadBitmap, eax, MUTE
+mov SelectorMaskBMH, eax
+invoke Get_Handle_To_Mask_Bitmap, MuteButtonBMH, 0ffffffh		;white
+mov MuteButtonMaskBMH, eax
 
 mov eax, Color1
 and eax, 07E7E7Eh
